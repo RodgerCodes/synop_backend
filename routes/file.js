@@ -62,16 +62,49 @@ router.post("/signin", (req, res) => {
 router.get("/info", (req, res) => {
   if (
     req.headers.authorization &&
-    req.headers.authorization.split("")[0] === "Bearer"
+    req.headers.authorization.split(" ")[0] == "Bearer"
   ) {
-    let token = req.headers.authorization.split("")[1];
+    let token = req.headers.authorization.split(",")[1];
     let decoded = jwt.decode(token, "fdsfsfsf");
-    return res.json({ success: true, msg: "HEllo" + decoded.name });
+    return res.json({ success: true, msg: "HEllO" + decoded.name });
   } else {
     return res.json({ success: false, msg: "No headers" });
   }
 });
 
-router.post("/code", (req, res) => {});
+router.get("/code", async (req, res) => {
+  try {
+    const code = await Code.find().populate("creator");
+    if (!code) {
+      res.send({ msg: "There is no code" });
+    } else {
+      res.send(code);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
 
+router.post("/code", async (req, res) => {
+  try {
+    // console.log(req.headers.authorization.split(" ")[0]);s
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.split(" ")[0] === "Bearer"
+    ) {
+      let token = req.headers.authorization.split(" ")[1];
+      let decoded = jwt.decode(token, "fdsfsfsf");
+      req.user = decoded;
+      // console.log(req.user._id);
+      let new_code = new Code({
+        code: req.body.code,
+        creator: req.user._id,
+      });
+      new_code = await new_code.save();
+      res.send(new_code);
+    } else {
+      res.send({ msg: "Invalid token" });
+    }
+  } catch (error) {}
+});
 module.exports = router;
